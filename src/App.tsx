@@ -1,129 +1,102 @@
+import { useState, useRef, useEffect } from 'react';
 import './App.css';
-import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-
-import {useState, useEffect} from "react";
-
-type LatLonAltPosition = {
-  longitude: number;
-  latitude: number;
-  altitdue: number;
-};
-
-type ECEFPosition = {
-  x: number;
-  y: number;
-  z: number;
-};
-
-type AirCraftData = {
-  icao24: string;
-  longitude: number;
-  latitude: number;
-  altitude: number;
-};
-
-type AirCraftEstimate = {
-  estimatedPosition: ECEFPosition;
-  trueNextPosition: ECEFPosition;
-  truePrevPosition: ECEFPosition;
-  deltaTime: number;
-  data: AirCraftData;
-};
-
-function LLAToECEF(longitude: number, latitude: number, altitude: number): ECEFPosition {
-  //https://en.wikipedia.org/wiki/Geographic_coordinate_conversion#From_geodetic_to_ECEF_coordinates
-  
-  function N(phi: number): number = {
-    const a = 0;
-    const b = 0;
-    const ee = 1.0 - ((b * b) / (a * a));
-    const cotcot = 
-    return a / Math.sqrt(1.0 - (ee / 1 + cot))
-  }
-}
-
-function ECEFToLLA(x: number, y: number, z: number): LatLonAltPosition {
-
-}
-
-class StateInterpolator {
-  #aviationState: Map<string, AirCraftEstimate>;
-  #previousElapsedTime: number;
-
-  constructor() {
-    this.#aviationState = new Map<string, AirCraftEstimate>();
-    this.#previousElapsedTime = 0;
-  }
-
-  updateStateEstimate(elapsedTime: number) {
-    const deltaTime = elapsedTime - this.#previousElapsedTime;
-    this.#previousElapsedTime = elapsedTime;
-
-    
-    
-    requestAnimationFrame(this.updateStateEstimate);
-  }
-
-  getEstimatedAviationState() {
-
-  }
-
-  getEstimatedMaritimeState() {
-
-  }
-
-  getEstimatedSatelliteState() {
-
-  }
-
-}
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { AtmosphereShader } from './shaders/atmosphere';
+import { EarthShader } from './shaders/earth';
 
 function App() {
-  const [aviationCache, setAviationCache] = useState(new Map<string, AirCraftData>());
+  
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  //Renderer setup.
   useEffect(() => {
-    const eventSource = new EventSource(`${import.meta.env.VITE_STATEOFTHEEARTH_API_URL}/events`);
-    console.log("Registered aviation stream")
-        
-    // Listen for messages from the server
-    eventSource.addEventListener("aviation_data", (event: MessageEvent) => {
-      console.log("received aviation data")
-      const delta = JSON.parse(event.data);
+    if(!canvasRef.current) return;
 
-      console.log(delta)
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1000.0, 1000000 );
+    camera.position.set(0, 0, 30000);
+    const controls = new OrbitControls( camera, canvasRef.current );
+    controls.target.set(0, 0, 0)
+    controls.update();
 
-      const next = new Map<string, AirCraftData>();
-
-      for(const aircraft of delta.create) next.set(aircraft.icao24, aircraft);
-      for(const aircraft of delta.update) next.set(aircraft.icao24, aircraft);
-      for(const icao24 of delta.delete) next.delete(icao24);
-
-      setAviationCache(next);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvasRef.current,
+      antialias: false,
+      logarithmicDepthBuffer: true
     });
 
-    // Log connection error
-    eventSource.onerror = function(event) {
-        console.log('Error occurred:', event);
-    };
-  }, []);
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    const composer = new EffectComposer(renderer);
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const geometry = new THREE.SphereGeometry(6371, 500, 500);
+    const material = new THREE.ShaderMaterial(EarthShader);
+    const globe = new THREE.Mesh( geometry, material );
+    scene.add( globe );
+
+    const light = new THREE.DirectionalLight()
+    scene.add(light)
+
+    const target = new THREE.WebGLRenderTarget(
+        window.innerWidth,
+        window.innerHeight,
+        {
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format: THREE.RGBAFormat,
+            stencilBuffer: false,
+            depthBuffer: true,
+            depthTexture: new THREE.DepthTexture(window.innerWidth, window.innerHeight)
+        },
+    );
+
+    composer.addPass(new RenderPass(scene, camera));
+    const atmospherePass = new ShaderPass(AtmosphereShader);
+    atmospherePass.uniforms.depth_texture.value = target.depthTexture;
+    atmospherePass.uniforms.projection_matrix_inverse.value = camera.projectionMatrixInverse;
+    atmospherePass.uniforms.view_matrix_inverse.value = camera.matrixWorld;
+    atmospherePass.uniforms.camera_position.value = camera.position;
+    atmospherePass.uniforms.light_direction.value = light.position;
+    composer.addPass(atmospherePass);
+    // composer.addPass(
+    //   new UnrealBloomPass(
+    //     new THREE.Vector2(window.innerWidth, window.innerHeight),
+    //     1.5,
+    //     0.4,
+    //     0.85
+    //   )
+    // );
+
+    function animate( time: number ) {
+      controls.update();
+      const angle = 0.0;//time * 0.0001;
+      light.position.set(Math.cos(angle), 0.0, Math.sin(angle))
+      material.uniforms.light_direction = { value: light.position }
+      renderer.setRenderTarget(target);
+      renderer.render(scene, camera);
+      renderer.setRenderTarget(null);
+
+      composer.render();
+    }
+
+    renderer.setAnimationLoop( animate );
+
+  }, [canvasRef.current]);
+
 
 
   return (
-    <MapContainer center={[51.505, -0.09]} zoom={13} scrollWheelZoom={true} preferCanvas={true}>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {[...aviationCache.entries()]
-      .filter(([, v]) => Number.isFinite(v.latitude) && Number.isFinite(v.longitude))
-      .map(([key, v]) => (
-        <Marker key={key} position={[v.latitude, v.longitude]}>
-          <Popup>{key}</Popup>
-        </Marker>
-      ))}
-
-    </MapContainer>
+    <div id="main-container">
+      <canvas id="main-canvas" ref={canvasRef}>
+        Failed to load canvas...
+      </canvas>
+    </div>
   );
 }
 
