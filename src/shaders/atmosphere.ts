@@ -17,7 +17,7 @@ const AtmosphereShader = {
         'view_matrix_inverse': { value: null },
         'light_direction': { value: new Vector3(1, 0 ,0) },
         'air_scale_height': {value: 8.5},
-        'aerosol_scale_height': {value: 10.0}
+        'aerosol_scale_height': {value: 1.0}
 	},
 
 	vertexShader: /* glsl */`
@@ -139,7 +139,7 @@ const AtmosphereShader = {
                 if(length(E) > 0.0) {
                     vec3 sample_transmittance = exp(-E * step_size);
                     LT = GetAirTransmittanceAlongRay(point, light_vector, profile) * GetAerosolTransmittanceAlongRay(point, light_vector, profile);
-                    vec3 sample_radiance = (rS * r_phase + mS * m_phase * 100.0) * LT + aS * 0.2;
+                    vec3 sample_radiance = (rS * r_phase + mS * m_phase * 1000000.0) * LT + aS * 0.2;
                     vec3 integrate = (sample_radiance - sample_radiance * sample_transmittance) / max(E, vec3(0.00000001));
                     result.in_scattering += result.transmittance * integrate;
                     result.transmittance *= sample_transmittance;
@@ -176,7 +176,7 @@ const AtmosphereShader = {
             vec2 intersect = RaySphereIntersect(ray_origin, ray_direction, planet_radius + 110.0);
 
             vec3 color = texel.xyz;
-            if(intersect.y >= 0.0) {
+            //if(intersect.y >= 0.0) {
                 AtmosphereProfile profile;
                 profile.planet_radius = planet_radius;
                 profile.air_scale_height = air_scale_height;
@@ -189,8 +189,8 @@ const AtmosphereShader = {
                 vec3 end = ray_origin + ray_direction * min(intersect.y, pdistance);
                 Radiance radiance = GetAtmosphereRadianceToPoint(start, end, normalize(light_direction), raymarch_steps, profile);
 
-                color = texel.xyz * radiance.transmittance + radiance.in_scattering * 10.0;
-            } 
+                color = texel.xyz * radiance.transmittance + max(radiance.in_scattering, 0.0) * 10.0;
+            //} 
 
             gl_FragColor = 1.0 - exp(-vec4(color, 1.0));
 		}`

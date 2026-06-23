@@ -7,6 +7,8 @@ const specular = loader.load('/8k_earth_specular_map.jpg');
 const night = loader.load('/8k_earth_nightmap.jpg');
 const clouds = loader.load('/8k_earth_clouds.jpg');
 
+console.log(night.generateMipmaps)
+
 albedo.colorSpace = SRGBColorSpace;
 night.colorSpace = SRGBColorSpace;
 clouds.colorSpace = SRGBColorSpace;
@@ -20,6 +22,7 @@ const EarthShader = {
         earth_normal: {value: normal},
         earth_albedo_night: {value: night},
         earth_clouds: {value: clouds},
+        time: {value: 0.0},
         light_direction: {value: new Vector3(1, 0, 0)}
     },
 
@@ -43,13 +46,15 @@ const EarthShader = {
     uniform sampler2D earth_normal;
     uniform sampler2D earth_albedo_night;
     uniform sampler2D earth_clouds;
+    uniform float time;
 
     uniform vec3 light_direction;
 
     const float PI = 3.14159265359;
 
     vec3 schlickFresnel(float vdotH) {
-        return vec3(0.04) + (1.0 - vec3(0.04)) * pow(clamp(1.0 - vdotH, 0.0, 1.0), 5.0);
+        float f0 = 0.04;
+        return vec3(f0) + (1.0 - vec3(f0)) * pow(clamp(1.0 - vdotH, 0.0, 1.0), 5.0);
     }
 
     float ggxDistribution(float nDotH, float roughness) {
@@ -64,16 +69,20 @@ const EarthShader = {
         return dp / denom;
     }
 
-    float GetMiePhase(float mu, float g) {
-        return max(3.0 / (25.1327412287) * ((1.0 - g * g) * (mu * mu + 1.0)) / (pow(1.0 + g * g - 2.0 * mu * g, 1.5) * (2.0 + g * g)), 0.0);
+    vec3 desaturate(vec3 color, float desaturation) {
+        return mix(color, vec3(length(color)), vec3(desaturation));
     }
     
     void main() {
-        vec3 albedo = clamp(texture2D(earth_albedo, texcoord).xyz, 0.0, 1.0);
+        float desaturation = 0.0;
+        vec3 albedo = texture2D(earth_albedo, texcoord).xyz;
         float roughness = mix(0.5, 1.0, 1.0 - texture2D(earth_specular, texcoord).x);
-        vec3 normal = (texture2D(earth_normal, texcoord).xyz * 2.0 - 1.0) * vec3(1, 1, 1);
-        vec3 albedo_night = clamp(texture2D(earth_albedo_night, texcoord).xyz, 0.0, 1.0);
-        float clouds = clamp(texture2D(earth_clouds, texcoord).x * 1.0, 0.0, 1.0);
+        vec3 normal = (texture2D(earth_normal, texcoord).xyz * 2.0 - 1.0);
+        vec3 albedo_night = texture2D(earth_albedo_night, texcoord).xyz * 2.0;
+        float clouds = clamp(texture2D(earth_clouds, texcoord).x, 0.0, 1.0);
+
+        float vary = sin(time * 0.002) * 0.5 + 0.5; 
+        vec3 night_blur = textureLod(earth_albedo_night, texcoord, 5.0).xyz;
         
         vec3 N = normalize(vnormal);
         vec3 T = normalize(cross(N, vec3(0, 1, 0)));
@@ -102,11 +111,11 @@ const EarthShader = {
 
         
         vec2 cloudshadow_uvs = vec2(1.0);
-        float cloudshadow = clamp(texture2D(earth_clouds, texcoord).x * 10.0, 0.0, 1.0);
+        //float cloudshadow = clamp(texture2D(earth_clouds, texcoord).x * 10.0, 0.0, 1.0);
 
         vec3 diffuse_brdf = kD * albedo / PI;
 
-        vec3 color = (diffuse_brdf + specular_brdf) * nDotL * 10.0 * (1.0 - clouds) + albedo_night * pow((1.0 - nDotL), 3.0) * (1.0 - clouds) + mix(vec3(0.02), vec3(1.0), max(dot(N, l), 0.0)) * clouds * 4.0;
+        vec3 color = (diffuse_brdf + specular_brdf) * nDotL * 5.0 * (1.0 - clouds) + albedo_night * pow((1.0 - nDotL), 10.0) * (1.0 - clouds) + mix(vec3(0.02) + pow(night_blur, vec3(1.0)) * 1.0, vec3(1.0), max(dot(N, l), 0.0)) * clouds * 4.0;
 
         gl_FragColor = (vec4(mix(color, vec3(length(color)), 0.3), 1.0));
     }`

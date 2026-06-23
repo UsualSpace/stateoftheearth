@@ -5,9 +5,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { AtmosphereShader } from './shaders/atmosphere';
 import { EarthShader } from './shaders/earth';
+import { MarkerShader } from './shaders/marker';
+import { MarkersScreenShader } from './shaders/markersScreenShader';
 
 function App() {
   
@@ -17,33 +18,20 @@ function App() {
   useEffect(() => {
     if(!canvasRef.current) return;
 
-    const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1000.0, 1000000 );
-    camera.position.set(0, 0, 30000);
+    camera.position.set(0, 0, 10000);
     const controls = new OrbitControls( camera, canvasRef.current );
     controls.target.set(0, 0, 0)
     controls.update();
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
-      antialias: false,
-      logarithmicDepthBuffer: true
+      antialias: true,
+      logarithmicDepthBuffer: true,
     });
 
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-    const composer = new EffectComposer(renderer);
-
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    const geometry = new THREE.SphereGeometry(6371, 500, 500);
-    const material = new THREE.ShaderMaterial(EarthShader);
-    const globe = new THREE.Mesh( geometry, material );
-    scene.add( globe );
-
-    const light = new THREE.DirectionalLight()
-    scene.add(light)
-
-    const target = new THREE.WebGLRenderTarget(
+   
+    const depthRT = new THREE.WebGLRenderTarget(
         window.innerWidth,
         window.innerHeight,
         {
@@ -56,30 +44,108 @@ function App() {
         },
     );
 
-    composer.addPass(new RenderPass(scene, camera));
+    const markersRT = new THREE.WebGLRenderTarget(
+        window.innerWidth,
+        window.innerHeight,
+        {
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format: THREE.RGBAFormat,
+            type: THREE.FloatType,
+            stencilBuffer: false,
+            depthBuffer: false,
+        },
+    );
+
+    const composer = new EffectComposer(renderer);
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const light = new THREE.DirectionalLight()
+
+    const geometry = new THREE.SphereGeometry(6371, 500, 500);
+    const globeMaterial = new THREE.ShaderMaterial(EarthShader);
+    const globe = new THREE.Mesh( geometry, globeMaterial );
+
+    const planeGeometry = new THREE.PlaneGeometry(1, 1);
+    const markerMaterial = new THREE.ShaderMaterial(MarkerShader);
+    markerMaterial.transparent = true;
+    markerMaterial.blending = THREE.AdditiveBlending;
+    markerMaterial.depthWrite = false;
+    const markers = new THREE.InstancedMesh(planeGeometry, markerMaterial, 10000);
+
+    function randomAircraftPosition() {
+      return {
+        lat: Math.random() * 180 - 90,
+        lon: Math.random() * 360 - 180,
+        alt: 11 + (Math.random() - 0.5) * 2 // 10-12 km centered at 11
+      };
+    }
+
+    function latLonAltToECEF(latDeg: number, lonDeg: number, altKm: number): THREE.Vector3 {
+      const R = 6371 + altKm;
+
+      const lat = latDeg * Math.PI / 180;
+      const lon = lonDeg * Math.PI / 180;
+
+      return new THREE.Vector3(
+          R * Math.cos(lat) * Math.cos(lon),
+          R * Math.sin(lat),
+          R * Math.cos(lat) * Math.sin(lon)
+      );
+    }
+
+    for(let i = 0; i < 500; ++i) {
+      const p = randomAircraftPosition();
+      const t = latLonAltToECEF(p.lat, p.lon, p.alt);
+      const m = new THREE.Matrix4().multiplyMatrices(new THREE.Matrix4().makeTranslation(t), new THREE.Matrix4().makeScale(100.0, 100.0, 100.0));
+      markers.setMatrixAt(i, m);
+    }
+
+    const markersScene = new THREE.Scene();
+    markersScene.add(markers)
+
+    const scene = new THREE.Scene();
+    scene.add(globe);
+    scene.add(light);
+
     const atmospherePass = new ShaderPass(AtmosphereShader);
-    atmospherePass.uniforms.depth_texture.value = target.depthTexture;
+    atmospherePass.uniforms.depth_texture.value = depthRT.depthTexture;
     atmospherePass.uniforms.projection_matrix_inverse.value = camera.projectionMatrixInverse;
     atmospherePass.uniforms.view_matrix_inverse.value = camera.matrixWorld;
     atmospherePass.uniforms.camera_position.value = camera.position;
     atmospherePass.uniforms.light_direction.value = light.position;
-    composer.addPass(atmospherePass);
-    // composer.addPass(
-    //   new UnrealBloomPass(
-    //     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    //     1.5,
-    //     0.4,
-    //     0.85
-    //   )
-    // );
 
-    function animate( time: number ) {
+    const markersPass = new ShaderPass(MarkersScreenShader);
+    markersPass.uniforms.markers_texture.value = markersRT.texture;
+    markersPass.uniforms.depth_texture.value = depthRT.depthTexture;
+    markersPass.uniforms.projection_matrix_inverse.value = camera.projectionMatrixInverse;
+    markersPass.uniforms.view_matrix_inverse.value = camera.matrixWorld;
+    markersPass.uniforms.camera_position.value = camera.position;
+
+    const scenePass = new RenderPass(scene, camera); 
+
+    composer.addPass(scenePass);
+    composer.addPass(atmospherePass);
+    composer.addPass(markersPass);
+
+    renderer.setClearColor(0, 0);
+
+    function animate(time: number) {
       controls.update();
-      const angle = 0.0;//time * 0.0001;
+      const angle = 0.0;// time * 0.001;
       light.position.set(Math.cos(angle), 0.0, Math.sin(angle))
-      material.uniforms.light_direction = { value: light.position }
-      renderer.setRenderTarget(target);
+      globeMaterial.uniforms.light_direction.value = light.position;
+      globeMaterial.uniforms.time.value = time;
+
+      //Render standard scene
+      renderer.setRenderTarget(depthRT);
       renderer.render(scene, camera);
+
+      //Render markers.
+      renderer.setRenderTarget(markersRT);
+      renderer.clearColor();
+      renderer.render(markersScene, camera);
       renderer.setRenderTarget(null);
 
       composer.render();
