@@ -60,7 +60,7 @@ function App() {
       logarithmicDepthBuffer: true,
     });
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(window.devicePixelRatio);
 
     window.addEventListener('resize', () => {
       const width = window.innerWidth;
@@ -69,9 +69,9 @@ function App() {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
 
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      composer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(width, height, false);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      composer.setSize(width, height);
     });
    
     const depthRT = new THREE.WebGLRenderTarget(
