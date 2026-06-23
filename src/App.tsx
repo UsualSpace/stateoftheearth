@@ -87,8 +87,6 @@ function App() {
         },
     );
 
-    resize();
-
     const markersRT = new THREE.WebGLRenderTarget(
         window.innerWidth,
         window.innerHeight,
@@ -192,6 +190,9 @@ function App() {
       composer.render();
     }
 
+    requestAnimationFrame(() => {
+      resize();
+    });
     renderer.setAnimationLoop( animate );
 
   }, [canvasRef.current]);
