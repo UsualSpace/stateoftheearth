@@ -20,7 +20,7 @@ const MarkerShader = {
         world_position = instanceMatrix[3].xyz;
         vec4 view_position = viewMatrix * vec4(world_position, 1.0);
         
-        float scale = 0.00;
+        float scale = 0.03;
         vec3 sphnormal = normalize(world_position);
         float visibility = max(dot(-normalize(world_position - cameraPosition), sphnormal), 0.0) * 10.0;
         scale *= clamp(visibility, 0.0, 1.0);
@@ -43,7 +43,7 @@ const MarkerShader = {
         float costh = cos(theta);
         float sinth = sin(theta);
         mat2 rot = mat2(costh, sinth, -sinth, costh); 
-        vec2 uv = texcoord;//rot * (texcoord - 0.5) + 0.5;
+        vec2 uv = rot * (texcoord - 0.5) + 0.5;
         float marker = texture2D(marker_icon_texture, uv).w * 2.0;
         gl_FragColor = vec4(marker);
     }`
