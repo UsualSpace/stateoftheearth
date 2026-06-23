@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import './App.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -156,7 +156,7 @@ function App() {
       //TODO: handle many other types of data (maritime, satellite, etc.)
       //TODO: Investigate safety of this considering it could be updated by an event mid loop.
       let i = 0;
-      for(const [icao24, aircraft] of aviationRef.current) {
+      for(const aircraft of aviationRef.current.values()) {
         const position = LLAToECEF(aircraft.latitude, aircraft.longitude, aircraft.altitude / 1000);
         markers.setMatrixAt(i, new THREE.Matrix4().makeTranslation(position));
         ++i;

@@ -1,5 +1,3 @@
-import { Vector3 } from "three";
-
 const MarkersScreenShader = {
 
     name: 'MarkersScreenShader',
