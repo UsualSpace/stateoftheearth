@@ -1,11 +1,11 @@
 import { SRGBColorSpace, TextureLoader, Vector3 } from "three";
 
 const loader = new TextureLoader();
-const albedo = loader.load('../public/8k_earth_daymap.jpg');
-const normal = loader.load('../public/8k_earth_normal_map.jpg');
-const specular = loader.load('../public/8k_earth_specular_map.jpg');
-const night = loader.load('../public/8k_earth_nightmap.jpg');
-const clouds = loader.load('../public/8k_earth_clouds.jpg');
+const albedo = loader.load(`${import.meta.env.BASE_URL}8k_earth_daymap.jpg`);
+const normal = loader.load(`${import.meta.env.BASE_URL}8k_earth_normal_map.jpg`);
+const specular = loader.load(`${import.meta.env.BASE_URL}8k_earth_specular_map.jpg`);
+const night = loader.load(`${import.meta.env.BASE_URL}8k_earth_nightmap.jpg`);
+const clouds = loader.load(`${import.meta.env.BASE_URL}8k_earth_clouds.jpg`);
 
 console.log(night.generateMipmaps)
 
