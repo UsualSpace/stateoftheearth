@@ -33,7 +33,7 @@ const MarkersScreenShader = {
             vec4 scene_color = texture2D(tDiffuse, texcoord);
             vec4 markers = texture2D(markers_texture, texcoord);
 
-            vec3 color = mix(scene_color.xyz, 1.0 - scene_color.xyz * 1.0, markers.x);
+            vec3 color = markers.x;//mix(scene_color.xyz, 1.0 - scene_color.xyz * 1.0, markers.x);
 
             gl_FragColor = vec4(color, 1.0);
         }`

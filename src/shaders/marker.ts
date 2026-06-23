@@ -44,7 +44,7 @@ const MarkerShader = {
         float sinth = sin(theta);
         mat2 rot = mat2(costh, sinth, -sinth, costh); 
         vec2 uv = rot * (texcoord - 0.5) + 0.5;
-        float marker = texture2D(marker_icon_texture, uv).w * 2.0;
+        float marker = texture2D(marker_icon_texture, uv).w * 1.0;
         gl_FragColor = vec4(marker);
     }`
 }
