@@ -71,6 +71,7 @@ function App() {
 
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      composer.setSize(window.innerWidth, window.innerHeight);
     });
    
     const depthRT = new THREE.WebGLRenderTarget(
