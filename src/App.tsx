@@ -60,9 +60,7 @@ function App() {
       logarithmicDepthBuffer: true,
     });
 
-    renderer.setPixelRatio(window.devicePixelRatio);
-
-    window.addEventListener('resize', () => {
+    function resize() {
       const width = window.innerWidth;
       const height = window.innerHeight;
 
@@ -72,7 +70,9 @@ function App() {
       renderer.setSize(width, height, false);
       renderer.setPixelRatio(window.devicePixelRatio);
       composer.setSize(width, height);
-    });
+    }
+
+    window.addEventListener('resize', resize);
    
     const depthRT = new THREE.WebGLRenderTarget(
         window.innerWidth,
@@ -86,6 +86,8 @@ function App() {
             depthTexture: new THREE.DepthTexture(window.innerWidth, window.innerHeight)
         },
     );
+
+    resize();
 
     const markersRT = new THREE.WebGLRenderTarget(
         window.innerWidth,
