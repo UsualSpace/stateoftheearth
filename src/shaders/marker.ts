@@ -1,4 +1,4 @@
-import { SRGBColorSpace, TextureLoader, Vector3 } from "three";
+import { TextureLoader } from "three";
 
 const loader = new TextureLoader();
 const markerIcon = loader.load('/marker_icon.png');
