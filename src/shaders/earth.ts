@@ -121,7 +121,7 @@ const EarthShader = {
 
         vec3 diffuse_brdf = kD * albedo / PI;
 
-        vec3 color = (diffuse_brdf + specular_brdf) * nDotL * 5.0 * (1.0 - clouds) * cloudshadow + albedo_night * pow((1.0 - nDotL), 10.0) * (1.0 - clouds) * cloudshadow + mix(vec3(0.02) + pow(night_blur, vec3(1.0)) * 1.0, vec3(1.0), max(dot(N, l), 0.0)) * clouds * 4.0;
+        vec3 color = (diffuse_brdf + specular_brdf) * nDotL * 5.0 * (1.0 - clouds) * cloudshadow + albedo_night * pow((1.0 - nDotL), 10.0) * (1.0 - clouds) + mix(vec3(0.02) + pow(night_blur, vec3(1.0)) * 1.0, vec3(1.0), max(dot(N, l), 0.0)) * clouds * 4.0;
 
         gl_FragColor = (vec4(mix(color, vec3(length(color)), 0.3), 1.0));
     }`
