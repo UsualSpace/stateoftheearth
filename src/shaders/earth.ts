@@ -115,13 +115,13 @@ const EarthShader = {
 
         vec3 specular_brdf = specular_brdf_numerator / specular_brdf_denominator;
 
-        
+        vec2 center = texcoord - 0.5;
         vec2 cloudshadow_uvs = vec2(1.0);
-        //float cloudshadow = clamp(texture2D(earth_clouds, texcoord).x * 10.0, 0.0, 1.0);
+        float cloudshadow = 1.0 - clamp(texture2D(earth_clouds, texcoord - normalize(center) * length(center) * 0.005).x * 4.0, 0.0, 1.0);
 
         vec3 diffuse_brdf = kD * albedo / PI;
 
-        vec3 color = (diffuse_brdf + specular_brdf) * nDotL * 5.0 * (1.0 - clouds) + albedo_night * pow((1.0 - nDotL), 10.0) * (1.0 - clouds) + mix(vec3(0.02) + pow(night_blur, vec3(1.0)) * 1.0, vec3(1.0), max(dot(N, l), 0.0)) * clouds * 4.0;
+        vec3 color = (diffuse_brdf + specular_brdf) * nDotL * 5.0 * (1.0 - clouds) * cloudshadow + albedo_night * pow((1.0 - nDotL), 10.0) * (1.0 - clouds) * cloudshadow + mix(vec3(0.02) + pow(night_blur, vec3(1.0)) * 1.0, vec3(1.0), max(dot(N, l), 0.0)) * clouds * 4.0;
 
         gl_FragColor = (vec4(mix(color, vec3(length(color)), 0.3), 1.0));
     }`
