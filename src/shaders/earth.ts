@@ -117,7 +117,7 @@ const EarthShader = {
 
         vec2 center = texcoord - 0.5;
         vec2 cloudshadow_uvs = vec2(1.0);
-        float cloudshadow = 1.0 - clamp(texture2D(earth_clouds, texcoord - normalize(center) * length(center) * 0.005).x * 4.0, 0.0, 1.0);
+        float cloudshadow = 1.0 - clamp(texture2D(earth_clouds, texcoord - normalize(center) * length(center) * 0.001).x * 4.0, 0.0, 1.0);
 
         vec3 diffuse_brdf = kD * albedo / PI;
 
