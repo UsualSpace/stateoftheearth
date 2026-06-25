@@ -20,7 +20,7 @@ const MarkerShader = {
         world_position = instanceMatrix[3].xyz;
         vec4 view_position = viewMatrix * vec4(world_position, 1.0);
         
-        float scale = 0.03;
+        float scale = 0.04;
         vec3 sphnormal = normalize(world_position);
         float visibility = max(dot(-normalize(world_position - cameraPosition), sphnormal), 0.0) * 10.0;
         scale *= clamp(visibility, 0.0, 1.0);
