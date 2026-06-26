@@ -132,6 +132,22 @@ function App() {
       );
     }
 
+    //FOR TESTING
+    // function randomAircraftPosition() {
+    //   return {
+    //     lat: Math.random() * 180 - 90,
+    //     lon: Math.random() * 360 - 180,
+    //     alt: 11 + (Math.random() - 0.5) * 2 // 10-12 km centered at 11
+    //   };
+    // }
+
+    // for(let i = 0; i < 500; ++i) {
+    //   const p = randomAircraftPosition();
+    //   const t = LLAToECEF(p.lat, p.lon, p.alt);
+    //   const m = new THREE.Matrix4().multiplyMatrices(new THREE.Matrix4().makeTranslation(t), new THREE.Matrix4().makeScale(100.0, 100.0, 100.0));
+    //   markers.setMatrixAt(i, m);
+    // }
+
     const markersScene = new THREE.Scene();
     markersScene.add(markers)
 
