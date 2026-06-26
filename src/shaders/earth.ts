@@ -88,7 +88,7 @@ const EarthShader = {
         normal = -vec3(normal.x, normal.y, -normal.z);
         normal.xy *= 3.0;
         vec3 albedo_night = texture2D(earth_albedo_night, texcoord).xyz * 2.0;
-        float clouds = 0.0;//clamp(texture2D(earth_clouds, texcoord).x, 0.0, 1.0);
+        float clouds = clamp(texture2D(earth_clouds, texcoord).x, 0.0, 1.0);
 
         float vary = sin(time * 0.002) * 0.5 + 0.5; 
         vec3 night_blur = textureLod(earth_albedo_night, texcoord, 5.0).xyz;
@@ -120,7 +120,7 @@ const EarthShader = {
 
         vec2 lightdir2d = normalize(inverse(TBN) * l).xy;
         vec2 shadowUV = texcoord - lightdir2d * 0.001;
-        float cloudshadow = 1.0; //1.0 - clamp(texture2D(earth_clouds, shadowUV).x * 4.0, 0.0, 1.0);
+        float cloudshadow = 1.0 - clamp(texture2D(earth_clouds, shadowUV).x * 4.0, 0.0, 1.0);
 
         vec3 diffuse_brdf = kD * albedo / PI;
 
