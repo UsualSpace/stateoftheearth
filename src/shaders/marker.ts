@@ -18,7 +18,7 @@ const MarkerShader = {
         texcoord = uv;
 
         world_position = instanceMatrix[3].xyz;
-        vec4 view_position = viewMatrix * vec4(world_position, 1.0);
+        vec4 view_position = modelViewMatrix * vec4(world_position, 1.0);
         
         float scale = 0.04;
         vec3 sphnormal = normalize(world_position);
