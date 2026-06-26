@@ -38,10 +38,10 @@ const EarthShader = {
     varying vec3 vnormal;
     void main() {
         texcoord = uv;
-        vnormal = normal;
         vec4 vposition = modelMatrix * vec4(position, 1.0);
+        vnormal = normalize(mat3(modelMatrix) * normal);
         world_position = vposition.xyz;
-        gl_Position = projectionMatrix * viewMatrix * vposition;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }`,
     fragmentShader: `
     varying vec2 texcoord;
@@ -115,9 +115,9 @@ const EarthShader = {
 
         vec3 specular_brdf = specular_brdf_numerator / specular_brdf_denominator;
 
-        vec2 center = texcoord - 0.5;
-        vec2 cloudshadow_uvs = vec2(1.0);
-        float cloudshadow = 1.0 - clamp(texture2D(earth_clouds, texcoord - normalize(center) * length(center) * 0.001).x * 4.0, 0.0, 1.0);
+        vec2 lightdir2d = normalize(inverse(TBN) * l).xy;
+        vec2 shadowUV = texcoord - lightdir2d * 0.001;
+        float cloudshadow = 1.0 - clamp(texture2D(earth_clouds, shadowUV).x * 4.0, 0.0, 1.0);
 
         vec3 diffuse_brdf = kD * albedo / PI;
 

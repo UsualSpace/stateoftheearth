@@ -132,7 +132,7 @@ const AtmosphereShader = {
             for(int i = 0; i < steps; ++i) {
                 vec3 point = ray_origin + ray_direction * (t + step_size * 0.5);
                 vec3 rS = GetAirDensityAtPoint(point, profile) * profile.rayleigh_scattering_coefficients;
-                vec3 aS = GetAirDensityAtPoint(point, profile) * vec3(0.1, 0.2, 0.9);
+                vec3 aS = GetAirDensityAtPoint(point, profile) * vec3(0.2, 0.2, 0.9);
                 vec3 mS = GetAerosolDensityAtPoint(point, profile) * profile.mie_scattering_coefficients;
                 vec3 E = rS + mS;
 

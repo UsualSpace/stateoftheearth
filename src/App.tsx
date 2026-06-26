@@ -9,6 +9,8 @@ import { AtmosphereShader } from './shaders/atmosphere';
 import { EarthShader } from './shaders/earth';
 import { MarkerShader } from './shaders/marker';
 import { MarkersScreenShader } from './shaders/markersScreenShader';
+import { getEarthRotationAngle, getJulianDate } from './astronomical_utils';
+import { degToRad } from 'three/src/math/MathUtils.js';
 
 type AirCraftData = {
   icao24: string;
@@ -159,14 +161,24 @@ function App() {
 
     renderer.setClearColor(0, 0);
 
+    const tilt = degToRad(23.44);
+
+    const tiltQ = new THREE.Quaternion()
+    .setFromAxisAngle(new THREE.Vector3(0,0,1), -tilt);
+
     function animate(time: number) {
       controls.update();
       globeMaterial.uniforms.light_direction.value = light.position;
       globeMaterial.uniforms.time.value = time;
+      
+      const theta = getEarthRotationAngle(getJulianDate());
+      const spinQ = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0,1,0), -theta);
+      globe.quaternion.copy(tiltQ).multiply(spinQ);
+      markers.quaternion.copy(tiltQ).multiply(spinQ);
 
       //Read in latest aircraft positions every frame.
       //TODO: handle many other types of data (maritime, satellite, etc.)
-      //TODO: Investigate safety of this considering it could be updated by an event mid loop.
       let i = 0;
       for(const aircraft of aviationRef.current.values()) {
         const position = LLAToECEF(aircraft.latitude, aircraft.longitude, aircraft.altitude / 1000);
