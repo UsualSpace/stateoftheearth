@@ -192,7 +192,7 @@ function App() {
 
       const spinQ = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
-        -getEarthRotationAngle(getJulianDate()) + Math.PI / 8.0
+        (getEarthRotationAngle(getJulianDate()) - Math.PI / 16.0)
       );
 
       // Earth orientation only
