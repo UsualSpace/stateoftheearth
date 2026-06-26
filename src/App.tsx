@@ -9,7 +9,7 @@ import { AtmosphereShader } from './shaders/atmosphere';
 import { EarthShader } from './shaders/earth';
 import { MarkerShader } from './shaders/marker';
 import { MarkersScreenShader } from './shaders/markersScreenShader';
-import { getEarthRotationAngle, getJulianDate, getOrbitAngle, getGMST } from './astronomical_utils';
+import { getEarthRotationAngle, getJulianDate } from './astronomical_utils';
 import { degToRad } from 'three/src/math/MathUtils.js';
 
 type AirCraftData = {
@@ -179,26 +179,20 @@ function App() {
 
     renderer.setClearColor(0, 0);
 
-    const tilt = degToRad(23.44);
-
-    //const tiltQ = new THREE.Quaternion()
-    //.setFromAxisAngle(new THREE.Vector3(0,0,1), -tilt);
+    const tiltQ = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0),
+      -degToRad(23.439281)
+    );
 
     function animate(time: number) {
       controls.update();
       globeMaterial.uniforms.light_direction.value = light.position;
       globeMaterial.uniforms.time.value = time;
-      
-      const jd = getJulianDate();
+
 
       const spinQ = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
         -getEarthRotationAngle(getJulianDate()) + Math.PI / 8.0
-      );
-
-      const tiltQ = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(1, 0, 0),
-        -degToRad(23.439281)
       );
 
       // Earth orientation only
